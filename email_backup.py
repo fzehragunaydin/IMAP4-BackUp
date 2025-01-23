@@ -9,6 +9,8 @@ from datetime import datetime
 import logging
 from tqdm import tqdm
 from threading import Thread
+import uuid
+import time
 
 
 class EmailBackup:
@@ -16,8 +18,8 @@ class EmailBackup:
         self.setup_logging()
         self.emails = [
             {
-                "email":"mail",
-                "password": "password",  
+                "email": "mail",
+                "password": "password",  # Mail şifrenizi buraya girin
                 "imap_server": "domain",
                 "imap_port": 993
             },
@@ -132,7 +134,9 @@ class EmailBackup:
                     try:
                         _, msg_data = mail.fetch(num, '(RFC822)')
                         msg = email.message_from_bytes(msg_data[0][1])
-                        message_id = msg.get('Message-ID', '').strip('<>')
+                        unique_id = str(uuid.uuid4()) 
+                        timestamp = int(time.time() * 1000)
+                        message_id = f"{unique_id}_{timestamp}"  
     
                         body = ""
                         if msg.is_multipart():
