@@ -11,19 +11,26 @@ from tqdm import tqdm
 from threading import Thread
 import uuid
 import time
-
+import schedule
+import signal
+import sys
 
 class EmailBackup:
     def __init__(self):
         self.setup_logging()
         self.emails = [
             {
-                "email": "mail",
-                "password": "password",  # Mail şifrenizi buraya girin
-                "imap_server": "domain",
+                "email": "abc@abc.com",
+                "password": "12345",  
+                "imap_server": "abc.com",
                 "imap_port": 993
             },
         ]
+
+         # If no emails configured, log warning and exit
+        if not self.emails or not any(self.emails):
+            logging.warning("No email configurations found. Please add email accounts to backup.")
+            sys.exit(1)
 
     def setup_logging(self):
         logging.basicConfig(
@@ -97,13 +104,12 @@ class EmailBackup:
                             f.write(payload)
                         attachment_paths.append(filepath)
                         
-                        logging.info(f"Kaydedilen dosya adı: {filename}")  # Debug için log
+                        logging.info(f"Kaydedilen dosya adı: {filename}")
                         
             except Exception as e:
                 logging.error(f"Eklenti kaydedilemedi: {str(e)}")
 
         return attachment_paths
-
 
     def backup_email(self, email_config):
         """Tek bir e-posta hesabını yedekler."""
@@ -189,5 +195,21 @@ class EmailBackup:
 
 
 if __name__ == "__main__":
-    backup = EmailBackup()
+    backup = EmailBackup()    
+    # Add signal handler for graceful shutdown
+    def signal_handler(sig, frame):
+        logging.info("Program sonlandırılıyor...")
+        sys.exit(0)
+    
+    signal.signal(signal.SIGINT, signal_handler)
+    
+    # Run backup immediately first time
     backup.backup_all_emails()
+    
+    # Then schedule periodic backups
+    schedule.every(720).minutes.do(backup.backup_all_emails)
+    
+    logging.info("Backup servisi çalışıyor...")
+    while True:
+        schedule.run_pending()
+        time.sleep(1)
